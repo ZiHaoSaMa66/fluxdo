@@ -17,6 +17,7 @@ import '../../utils/quote_builder.dart';
 import 'package:uuid/uuid.dart';
 import 'dart:async';
 import 'dart:math' as math;
+import 'package:html/parser.dart' as html_parser;
 import '../../models/draft.dart';
 import '../../models/topic.dart';
 import '../../utils/responsive.dart';
@@ -24,6 +25,7 @@ import '../../utils/share_utils.dart';
 import '../../providers/preferences_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/local_topic_history_provider.dart';
+import '../../providers/category_provider.dart';
 import '../reading_settings_page.dart';
 import '../../providers/selected_topic_provider.dart';
 import '../../providers/discourse_providers.dart';
@@ -190,6 +192,7 @@ class _TopicDetailPageState extends ConsumerState<TopicDetailPage>
   bool _autoOpenReplyHandled = false; // 是否已处理自动打开回复框
   bool _autoOpenRevisionHandled = false; // 是否已处理自动打开编辑历史 modal
   bool _autoOpenAiChatHandled = false; // 是否已处理自动打开 AI 聊天
+
   late final TopicSearchNotifier _topicSearchNotifier;
   // AI 滑动入口相关
   late final PageController _pageController;
@@ -2189,10 +2192,12 @@ class _TopicDetailPageState extends ConsumerState<TopicDetailPage>
     if (detail.postStream.posts.isNotEmpty) {
       final firstPost = detail.postStream.posts.first;
       if (firstPost.cooked.isNotEmpty) {
-        final plainText = firstPost.cooked
-            .replaceAll(RegExp(r'<[^>]*>'), '')
-            .replaceAll(RegExp(r'\s+'), ' ')
-            .trim();
+        // 使用 html 包解析，正确处理 HTML 实体
+        final document = html_parser.parse(firstPost.cooked);
+        final plainText = document.body?.text
+                .replaceAll(RegExp(r'\s+'), ' ')
+                .trim() ??
+            '';
         if (plainText.isNotEmpty) {
           excerpt = plainText.length > 200
               ? '${plainText.substring(0, 200)}...'
@@ -2204,10 +2209,20 @@ class _TopicDetailPageState extends ConsumerState<TopicDetailPage>
     // 提取标签列表
     final tags = detail.tags?.map((tag) => tag.name).toList() ?? [];
 
+    // 获取分类信息
+    final categoryMap = ref.read(categoryMapProvider).value ?? {};
+    final category = categoryMap[detail.categoryId];
+    final categoryId = detail.categoryId;
+    final categoryName = category?.name;
+    final categoryColor = category?.color;
+
     ref.read(localTopicHistoryProvider.notifier).record(
           topicId: detail.id,
           title: detail.title,
           excerpt: excerpt,
+          categoryId: categoryId,
+          categoryName: categoryName,
+          categoryColor: categoryColor,
           tags: tags,
           lastReadPostNumber: detail.lastReadPostNumber,
         );

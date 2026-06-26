@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 // ignore: depend_on_referenced_packages
@@ -15,8 +16,10 @@ const int maxLocalTopicHistoryItems = 500;
 class LocalTopicHistoryNotifier
     extends StateNotifier<List<LocalTopicHistoryItem>> {
   static const String _storageKey = 'local_topic_history_items';
+  static const Duration _debounceDuration = Duration(seconds: 2);
 
   final SharedPreferences _prefs;
+  Timer? _saveTimer;
 
   LocalTopicHistoryNotifier(this._prefs) : super(_load(_prefs));
 
@@ -67,24 +70,38 @@ class LocalTopicHistoryNotifier
     } else {
       state = list;
     }
-    _save();
+    _debounceSave();
   }
 
   /// 删除单条历史
   void removeByTopicId(int topicId) {
     state = state.where((e) => e.topicId != topicId).toList();
-    _save();
+    _debounceSave();
   }
 
   /// 清空全部历史
   void clearAll() {
     state = [];
-    _save();
+    _debounceSave();
+  }
+
+  /// 防抖保存：延迟写入 SharedPreferences，避免频繁序列化
+  void _debounceSave() {
+    _saveTimer?.cancel();
+    _saveTimer = Timer(_debounceDuration, _save);
   }
 
   void _save() {
     final jsonStr = jsonEncode(state.map((e) => e.toJson()).toList());
     _prefs.setString(_storageKey, jsonStr);
+  }
+
+  @override
+  void dispose() {
+    _saveTimer?.cancel();
+    // dispose 前立即保存，避免丢失数据
+    _save();
+    super.dispose();
   }
 }
 

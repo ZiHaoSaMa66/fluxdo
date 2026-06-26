@@ -1,3 +1,5 @@
+import '../utils/time_utils.dart';
+
 /// 本地帖子浏览历史项
 /// 与需要登录的 Discourse 浏览历史区分，这是纯本地存储的浏览记录
 class LocalTopicHistoryItem {
@@ -44,7 +46,7 @@ class LocalTopicHistoryItem {
         categoryName: json['categoryName'] as String?,
         categoryColor: json['categoryColor'] as String?,
         tags: (json['tags'] as List<dynamic>?)?.cast<String>() ?? [],
-        visitedAt: DateTime.parse(json['visitedAt'] as String),
+        visitedAt: TimeUtils.parseUtcTime(json['visitedAt'] as String?) ?? DateTime.now(),
         lastReadPostNumber: json['lastReadPostNumber'] as int?,
       );
 
