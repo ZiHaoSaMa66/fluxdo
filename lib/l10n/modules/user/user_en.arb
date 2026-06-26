@@ -47,6 +47,7 @@
   "profile_aiModelService": "AI Model Service",
   "profile_appearance": "Appearance",
   "profile_browsingHistory": "Browsing history",
+  "profile_localHistory": "Local History",
   "profile_cdkReauthSuccess": "CDK re-authorization successful",
   "profile_confirmLogout": "Confirm logout",
   "profile_dataManagement": "Data management",

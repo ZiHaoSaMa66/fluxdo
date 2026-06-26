@@ -47,6 +47,7 @@
   "profile_aiModelService": "AI 模型服务",
   "profile_appearance": "外观设置",
   "profile_browsingHistory": "浏览历史",
+  "profile_localHistory": "本地历史",
   "profile_cdkReauthSuccess": "CDK 重新授权成功",
   "profile_confirmLogout": "确认退出",
   "profile_dataManagement": "数据管理",

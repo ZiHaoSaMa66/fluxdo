@@ -7,6 +7,7 @@ import '../models/user.dart';
 import '../pages/bookmarks_page.dart';
 import '../pages/browsing_history_page.dart';
 import '../pages/drafts_page.dart';
+import '../pages/local_topic_history_page.dart';
 import '../pages/private_messages_page.dart';
 import '../pages/profile_page.dart';
 import '../pages/topics_screen.dart';
@@ -69,6 +70,16 @@ class NavEntryRegistry {
         pageBuilder: (ctx, isActive) =>
             BrowsingHistoryPage(isActive: isActive),
         requiresLogin: true,
+      ),
+      NavEntry(
+        id: NavEntryIds.localHistory,
+        kind: NavEntryKind.page,
+        iconData: Symbols.schedule_rounded,
+        selectedIconData: Symbols.schedule_rounded,
+        label: (ctx) => ctx.l10n.nav_localHistory,
+        pageBuilder: (ctx, isActive) =>
+            LocalTopicHistoryPage(isActive: isActive),
+        requiresLogin: false,
       ),
       NavEntry(
         id: NavEntryIds.drafts,

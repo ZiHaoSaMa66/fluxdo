@@ -1,0 +1,95 @@
+import 'dart:convert';
+
+// ignore: depend_on_referenced_packages
+import 'package:flutter_riverpod/legacy.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../models/local_topic_history_item.dart';
+import 'theme_provider.dart'; // sharedPreferencesProvider
+
+/// 本地帖子浏览历史最大条数
+const int maxLocalTopicHistoryItems = 500;
+
+/// 本地帖子浏览历史状态管理
+/// 与需要登录的 Discourse 浏览历史区分，这是纯本地存储的浏览记录
+class LocalTopicHistoryNotifier
+    extends StateNotifier<List<LocalTopicHistoryItem>> {
+  static const String _storageKey = 'local_topic_history_items';
+
+  final SharedPreferences _prefs;
+
+  LocalTopicHistoryNotifier(this._prefs) : super(_load(_prefs));
+
+  static List<LocalTopicHistoryItem> _load(SharedPreferences prefs) {
+    final jsonStr = prefs.getString(_storageKey);
+    if (jsonStr == null) return [];
+    try {
+      final list = jsonDecode(jsonStr) as List;
+      return list
+          .map((e) => LocalTopicHistoryItem.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  /// 记录一条浏览历史
+  /// 同 topicId 去重：更新信息和时间，移到头部
+  void record({
+    required int topicId,
+    required String title,
+    String? excerpt,
+    int? categoryId,
+    String? categoryName,
+    String? categoryColor,
+    List<String>? tags,
+    int? lastReadPostNumber,
+  }) {
+    final now = DateTime.now();
+    final list = state.where((e) => e.topicId != topicId).toList();
+    list.insert(
+      0,
+      LocalTopicHistoryItem(
+        topicId: topicId,
+        title: title,
+        excerpt: excerpt,
+        categoryId: categoryId,
+        categoryName: categoryName,
+        categoryColor: categoryColor,
+        tags: tags ?? [],
+        visitedAt: now,
+        lastReadPostNumber: lastReadPostNumber,
+      ),
+    );
+    // 超出上限则截断
+    if (list.length > maxLocalTopicHistoryItems) {
+      state = list.sublist(0, maxLocalTopicHistoryItems);
+    } else {
+      state = list;
+    }
+    _save();
+  }
+
+  /// 删除单条历史
+  void removeByTopicId(int topicId) {
+    state = state.where((e) => e.topicId != topicId).toList();
+    _save();
+  }
+
+  /// 清空全部历史
+  void clearAll() {
+    state = [];
+    _save();
+  }
+
+  void _save() {
+    final jsonStr = jsonEncode(state.map((e) => e.toJson()).toList());
+    _prefs.setString(_storageKey, jsonStr);
+  }
+}
+
+final localTopicHistoryProvider = StateNotifierProvider<
+    LocalTopicHistoryNotifier, List<LocalTopicHistoryItem>>((ref) {
+  final prefs = ref.watch(sharedPreferencesProvider);
+  return LocalTopicHistoryNotifier(prefs);
+});

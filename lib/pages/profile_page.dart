@@ -11,6 +11,7 @@ import '../services/discourse_cache_manager.dart';
 import 'webview_page.dart';
 import 'login_page.dart';
 import 'browsing_history_page.dart';
+import 'local_topic_history_page.dart';
 import 'bookmarks_page.dart';
 import 'export_history_page.dart';
 import 'my_browser_page.dart';
@@ -691,6 +692,15 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
         onTap: () => Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const BrowsingHistoryPage()),
+        ),
+      ),
+      (
+        icon: Symbols.schedule_rounded,
+        iconColor: Colors.green,
+        title: context.l10n.profile_localHistory,
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const LocalTopicHistoryPage()),
         ),
       ),
     ];

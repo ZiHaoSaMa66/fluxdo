@@ -23,6 +23,7 @@ import '../../utils/responsive.dart';
 import '../../utils/share_utils.dart';
 import '../../providers/preferences_provider.dart';
 import '../../providers/theme_provider.dart';
+import '../../providers/local_topic_history_provider.dart';
 import '../reading_settings_page.dart';
 import '../../providers/selected_topic_provider.dart';
 import '../../providers/discourse_providers.dart';
@@ -1544,6 +1545,9 @@ class _TopicDetailPageState extends ConsumerState<TopicDetailPage>
         ref
             .read(topicSessionProvider(widget.topicId).notifier)
             .setTopicTitle(detail.title);
+        
+        // 记录到本地浏览历史
+        _recordLocalTopicHistory(detail);
       }
       // 首次拿到 detail 后再决定是否应用默认嵌套视图：
       // 私信场景下树形视图 API 拉不到数据，跳过该配置
@@ -2176,6 +2180,37 @@ class _TopicDetailPageState extends ConsumerState<TopicDetailPage>
       },
       child: scrollView,
     );
+  }
+
+  /// 记录到本地浏览历史
+  void _recordLocalTopicHistory(TopicDetail detail) {
+    // 提取帖子摘要（从首帖 HTML 中取纯文本前 200 字符）
+    String? excerpt;
+    if (detail.postStream.posts.isNotEmpty) {
+      final firstPost = detail.postStream.posts.first;
+      if (firstPost.cooked.isNotEmpty) {
+        final plainText = firstPost.cooked
+            .replaceAll(RegExp(r'<[^>]*>'), '')
+            .replaceAll(RegExp(r'\s+'), ' ')
+            .trim();
+        if (plainText.isNotEmpty) {
+          excerpt = plainText.length > 200
+              ? '${plainText.substring(0, 200)}...'
+              : plainText;
+        }
+      }
+    }
+
+    // 提取标签列表
+    final tags = detail.tags?.map((tag) => tag.name).toList() ?? [];
+
+    ref.read(localTopicHistoryProvider.notifier).record(
+          topicId: detail.id,
+          title: detail.title,
+          excerpt: excerpt,
+          tags: tags,
+          lastReadPostNumber: detail.lastReadPostNumber,
+        );
   }
 }
 

@@ -167,6 +167,7 @@ class NavEntryIds {
   static const String profile = 'profile';
   static const String bookmarks = 'bookmarks';
   static const String history = 'history';
+  static const String localHistory = 'local_history';
   static const String drafts = 'drafts';
   static const String notifications = 'notifications';
   static const String messages = 'messages';
