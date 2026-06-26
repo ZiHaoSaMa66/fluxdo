@@ -1,4 +1,4 @@
-name: Build Android Debug APK
+name: Build Android Release APK
 
 on:
   push:
@@ -87,15 +87,15 @@ jobs:
           echo "ANDROID_NDK_HOME=${ndk_path}" >> "${GITHUB_ENV}"
           echo "ANDROID_NDK_ROOT=${ndk_path}" >> "${GITHUB_ENV}"
 
-      - name: Build Android Debug APK
+      - name: Build Android Release APK
         run: |
-          dart tool/flutterw.dart build apk --debug --target-platform ${{ matrix.flutter-target }} --dart-define=cronetHttpNoPlay=true
+          dart tool/flutterw.dart build apk --release --target-platform ${{ matrix.flutter-target }} --dart-define=cronetHttpNoPlay=true
           mkdir -p dist
-          mv build/app/outputs/flutter-apk/app-debug.apk dist/fluxdo-${{ matrix.arch }}-debug.apk
+          mv build/app/outputs/flutter-apk/app-release.apk dist/fluxdo-${{ matrix.arch }}-release.apk
 
-      - name: Upload artifact
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: fluxdo-${{ matrix.arch }}-debug
+          name: fluxdo-${{ matrix.arch }}-release
           path: ./dist
           overwrite: true
