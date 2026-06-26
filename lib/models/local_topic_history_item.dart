@@ -33,7 +33,7 @@ class LocalTopicHistoryItem {
         'categoryName': categoryName,
         'categoryColor': categoryColor,
         'tags': tags,
-        'visitedAt': visitedAt.toIso8601String(),
+        'visitedAt': visitedAt.toUtc().toIso8601String(),
         'lastReadPostNumber': lastReadPostNumber,
       };
 

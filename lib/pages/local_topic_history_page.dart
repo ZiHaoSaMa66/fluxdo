@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/local_topic_history_item.dart';
 import '../navigation/nav_action_bus.dart';
 import '../providers/local_topic_history_provider.dart';
-import '../widgets/common/error_view.dart';
+import '../services/toast_service.dart';
 import '../l10n/s.dart';
 import '../utils/time_utils.dart';
 import '../utils/dialog_utils.dart';
@@ -74,10 +74,12 @@ class _LocalTopicHistoryPageState extends ConsumerState<LocalTopicHistoryPage> {
             leading: const Icon(Symbols.delete_rounded),
             title: Text(context.l10n.localTopicHistory_deleteItem),
             onTap: () {
+              final message = context.l10n.localTopicHistory_deleted;
               Navigator.pop(context);
               ref
                   .read(localTopicHistoryProvider.notifier)
                   .removeByTopicId(item.topicId);
+              ToastService.showSuccess(message);
             },
           ),
         ],
@@ -100,6 +102,7 @@ class _LocalTopicHistoryPageState extends ConsumerState<LocalTopicHistoryPage> {
             onPressed: () {
               ref.read(localTopicHistoryProvider.notifier).clearAll();
               Navigator.pop(context, true);
+              ToastService.showSuccess(context.l10n.localTopicHistory_allCleared);
             },
             style: FilledButton.styleFrom(
               backgroundColor: Theme.of(context).colorScheme.error,
@@ -161,15 +164,22 @@ class _LocalTopicHistoryPageState extends ConsumerState<LocalTopicHistoryPage> {
 
   Widget _buildHistoryList(List<LocalTopicHistoryItem> history) {
     if (history.isEmpty) {
+      final theme = Theme.of(context);
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Symbols.history_rounded, size: 64, color: Colors.grey),
+            Icon(
+              Symbols.history_rounded,
+              size: 64,
+              color: theme.colorScheme.onSurface.withOpacity(0.5),
+            ),
             const SizedBox(height: 16),
             Text(
               context.l10n.localTopicHistory_empty,
-              style: const TextStyle(color: Colors.grey),
+              style: TextStyle(
+                color: theme.colorScheme.onSurface.withOpacity(0.5),
+              ),
             ),
           ],
         ),

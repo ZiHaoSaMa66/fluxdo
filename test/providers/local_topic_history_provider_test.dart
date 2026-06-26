@@ -11,7 +11,11 @@ void main() {
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
       prefs = await SharedPreferences.getInstance();
-      notifier = LocalTopicHistoryNotifier(prefs);
+      notifier = LocalTopicHistoryNotifier(prefs, debounceDuration: Duration.zero);
+    });
+
+    tearDown(() {
+      notifier.dispose();
     });
 
     test('初始状态为空列表', () {
@@ -94,8 +98,9 @@ void main() {
     test('持久化到 SharedPreferences', () async {
       notifier.record(topicId: 1, title: '标题1');
 
-      // 等待 debounce 完成（2 秒延迟 + 余量）
-      await Future.delayed(const Duration(seconds: 3));
+      // debounceDuration 为 Duration.zero，立即保存
+      // 等待一小段时间确保异步保存完成
+      await Future.delayed(const Duration(milliseconds: 100));
 
       // 创建新的 notifier 实例，从 SharedPreferences 加载
       final newNotifier = LocalTopicHistoryNotifier(prefs);
@@ -103,6 +108,8 @@ void main() {
       expect(newNotifier.state.length, 1);
       expect(newNotifier.state.first.topicId, 1);
       expect(newNotifier.state.first.title, '标题1');
+
+      newNotifier.dispose();
     });
 
     test('SharedPreferences 数据损坏时返回空列表', () async {
@@ -112,6 +119,8 @@ void main() {
       final newNotifier = LocalTopicHistoryNotifier(prefs);
 
       expect(newNotifier.state, isEmpty);
+
+      newNotifier.dispose();
     });
 
     test('JSON 解析异常时返回空列表', () async {
@@ -121,6 +130,8 @@ void main() {
       final newNotifier = LocalTopicHistoryNotifier(prefs);
 
       expect(newNotifier.state, isEmpty);
+
+      newNotifier.dispose();
     });
   });
 }

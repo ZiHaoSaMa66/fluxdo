@@ -16,12 +16,15 @@ const int maxLocalTopicHistoryItems = 500;
 class LocalTopicHistoryNotifier
     extends StateNotifier<List<LocalTopicHistoryItem>> {
   static const String _storageKey = 'local_topic_history_items';
-  static const Duration _debounceDuration = Duration(seconds: 2);
+  static const Duration _defaultDebounceDuration = Duration(seconds: 2);
 
   final SharedPreferences _prefs;
+  final Duration _debounceDuration;
   Timer? _saveTimer;
 
-  LocalTopicHistoryNotifier(this._prefs) : super(_load(_prefs));
+  LocalTopicHistoryNotifier(this._prefs, {Duration? debounceDuration})
+      : _debounceDuration = debounceDuration ?? _defaultDebounceDuration,
+        super(_load(_prefs));
 
   static List<LocalTopicHistoryItem> _load(SharedPreferences prefs) {
     final jsonStr = prefs.getString(_storageKey);

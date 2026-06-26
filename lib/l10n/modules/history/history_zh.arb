@@ -11,6 +11,8 @@
   "localTopicHistory_clearAllTitle": "清空本地历史",
   "localTopicHistory_clearAllConfirm": "确定要清空所有本地浏览历史吗？此操作不可恢复。",
   "localTopicHistory_clearAllButton": "清空",
+  "localTopicHistory_deleted": "已删除",
+  "localTopicHistory_allCleared": "已清空全部历史",
   "myTopics_empty": "暂无话题",
   "myTopics_emptySearchHint": "输入关键词搜索我的话题",
   "myTopics_searchHint": "在我的话题中搜索...",

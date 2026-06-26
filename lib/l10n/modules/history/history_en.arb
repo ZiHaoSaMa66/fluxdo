@@ -11,6 +11,8 @@
   "localTopicHistory_clearAllTitle": "Clear Local History",
   "localTopicHistory_clearAllConfirm": "Are you sure you want to clear all local browsing history? This action cannot be undone.",
   "localTopicHistory_clearAllButton": "Clear",
+  "localTopicHistory_deleted": "Deleted",
+  "localTopicHistory_allCleared": "All history cleared",
   "myTopics_empty": "No topics",
   "myTopics_emptySearchHint": "Enter keywords to search my topics",
   "myTopics_searchHint": "Search my topics...",

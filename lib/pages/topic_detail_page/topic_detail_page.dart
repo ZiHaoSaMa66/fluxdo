@@ -214,6 +214,9 @@ class _TopicDetailPageState extends ConsumerState<TopicDetailPage>
   bool _isParentActive = true;
   bool _isScreenTrackRunning = false;
 
+  // 同一加载周期内已记录浏览历史的话题 ID，避免重复记录
+  final Set<int> _recordedTopicIds = {};
+
   bool get _usesEmbeddedMobileWorkspaceChrome {
     return widget.embeddedMode &&
         PlatformUtils.isMobile &&
@@ -1549,8 +1552,10 @@ class _TopicDetailPageState extends ConsumerState<TopicDetailPage>
             .read(topicSessionProvider(widget.topicId).notifier)
             .setTopicTitle(detail.title);
         
-        // 记录到本地浏览历史
-        _recordLocalTopicHistory(detail);
+        // 记录到本地浏览历史（同一加载周期内只记录一次）
+        if (detail.postStream.posts.isNotEmpty && _recordedTopicIds.add(detail.id)) {
+          unawaited(_recordLocalTopicHistory(detail));
+        }
       }
       // 首次拿到 detail 后再决定是否应用默认嵌套视图：
       // 私信场景下树形视图 API 拉不到数据，跳过该配置
@@ -2186,18 +2191,13 @@ class _TopicDetailPageState extends ConsumerState<TopicDetailPage>
   }
 
   /// 记录到本地浏览历史
-  void _recordLocalTopicHistory(TopicDetail detail) {
+  Future<void> _recordLocalTopicHistory(TopicDetail detail) async {
     // 提取帖子摘要（从首帖 HTML 中取纯文本前 200 字符）
     String? excerpt;
     if (detail.postStream.posts.isNotEmpty) {
       final firstPost = detail.postStream.posts.first;
       if (firstPost.cooked.isNotEmpty) {
-        // 使用 html 包解析，正确处理 HTML 实体
-        final document = html_parser.parse(firstPost.cooked);
-        final plainText = document.body?.text
-                .replaceAll(RegExp(r'\s+'), ' ')
-                .trim() ??
-            '';
+        final plainText = await _extractPlainText(firstPost.cooked);
         if (plainText.isNotEmpty) {
           excerpt = plainText.length > 200
               ? '${plainText.substring(0, 200)}...'
@@ -2226,6 +2226,38 @@ class _TopicDetailPageState extends ConsumerState<TopicDetailPage>
           tags: tags,
           lastReadPostNumber: detail.lastReadPostNumber,
         );
+  }
+
+  /// 从 HTML 中提取纯文本（长 HTML 在 isolate 中处理，避免阻塞主线程）
+  Future<String> _extractPlainText(String html) async {
+    if (html.isEmpty) return '';
+    
+    // 短 HTML 同步解析（阈值 5000 字符，避免 isolate 启动开销）
+    if (html.length < 5000) {
+      return _parseHtmlAndExtractText(html);
+    }
+    
+    // 长 HTML 异步解析（失败时 fallback 到同步解析）
+    try {
+      return await compute(_parseHtmlAndExtractText, html);
+    } catch (e) {
+      debugPrint('[TopicDetail] Isolate HTML 解析异常: $e');
+      return _parseHtmlAndExtractText(html);
+    }
+  }
+
+  /// 解析 HTML 并提取纯文本（可在 isolate 中运行）
+  static String _parseHtmlAndExtractText(String html) {
+    try {
+      final document = html_parser.parse(html);
+      return document.body?.text
+              .replaceAll(RegExp(r'\s+'), ' ')
+              .trim() ??
+          '';
+    } catch (e) {
+      debugPrint('[TopicDetail] HTML 解析失败: $e');
+      return '';
+    }
   }
 }
 
