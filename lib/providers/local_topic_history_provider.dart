@@ -52,26 +52,41 @@ class LocalTopicHistoryNotifier
     int? lastReadPostNumber,
   }) {
     final now = DateTime.now();
-    final list = state.where((e) => e.topicId != topicId).toList();
-    list.insert(
-      0,
-      LocalTopicHistoryItem(
-        topicId: topicId,
-        title: title,
-        excerpt: excerpt,
-        categoryId: categoryId,
-        categoryName: categoryName,
-        categoryColor: categoryColor,
-        tags: tags ?? [],
-        visitedAt: now,
-        lastReadPostNumber: lastReadPostNumber,
-      ),
+    final newItem = LocalTopicHistoryItem(
+      topicId: topicId,
+      title: title,
+      excerpt: excerpt,
+      categoryId: categoryId,
+      categoryName: categoryName,
+      categoryColor: categoryColor,
+      tags: tags ?? [],
+      visitedAt: now,
+      lastReadPostNumber: lastReadPostNumber,
     );
-    // 超出上限则截断
-    if (list.length > maxLocalTopicHistoryItems) {
-      state = list.sublist(0, maxLocalTopicHistoryItems);
+
+    // 快速路径：首访帖子（最常见），无需 filter 拷贝
+    final existingIndex = state.indexWhere((e) => e.topicId == topicId);
+    if (existingIndex == -1) {
+      // 新条目：直接 prepend，超出上限则截断尾部
+      final list = [newItem, ...state];
+      state = list.length > maxLocalTopicHistoryItems
+          ? list.sublist(0, maxLocalTopicHistoryItems)
+          : list;
+    } else if (existingIndex == 0 &&
+        state.first.title == title &&
+        state.first.lastReadPostNumber == lastReadPostNumber) {
+      // 命中同一帖子且信息未变（重复打开同一帖子），仅更新时间
+      state = [newItem, ...state.sublist(1)];
     } else {
-      state = list;
+      // 已有条目需更新：移除旧条目后插入头部
+      final list = [
+        newItem,
+        ...state.sublist(0, existingIndex),
+        ...state.sublist(existingIndex + 1),
+      ];
+      state = list.length > maxLocalTopicHistoryItems
+          ? list.sublist(0, maxLocalTopicHistoryItems)
+          : list;
     }
     _debounceSave();
   }

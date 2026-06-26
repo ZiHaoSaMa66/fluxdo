@@ -16,6 +16,7 @@ import '../../utils/link_launcher.dart';
 import '../../utils/quote_builder.dart';
 import 'package:uuid/uuid.dart';
 import 'dart:async';
+import 'dart:isolate';
 import 'dart:math' as math;
 import 'package:html/parser.dart' as html_parser;
 import '../../models/draft.dart';
@@ -2228,34 +2229,24 @@ class _TopicDetailPageState extends ConsumerState<TopicDetailPage>
         );
   }
 
-  /// 从 HTML 中提取纯文本（长 HTML 在 isolate 中处理，避免阻塞主线程）
+  /// 从 HTML 中提取纯文本（始终在 isolate 中处理，避免阻塞 UI 线程）
   Future<String> _extractPlainText(String html) async {
     if (html.isEmpty) return '';
-    
-    // 短 HTML 同步解析（阈值 5000 字符，避免 isolate 启动开销）
-    if (html.length < 5000) {
-      return _parseHtmlAndExtractText(html);
-    }
-    
-    // 长 HTML 异步解析（失败时 fallback 到同步解析）
+
     try {
-      return await compute(_parseHtmlAndExtractText, html);
+      return await Isolate.run(() {
+        try {
+          final document = html_parser.parse(html);
+          return document.body?.text
+                  .replaceAll(RegExp(r'\s+'), ' ')
+                  .trim() ??
+              '';
+        } catch (_) {
+          return '';
+        }
+      });
     } catch (e) {
       debugPrint('[TopicDetail] Isolate HTML 解析异常: $e');
-      return _parseHtmlAndExtractText(html);
-    }
-  }
-
-  /// 解析 HTML 并提取纯文本（可在 isolate 中运行）
-  static String _parseHtmlAndExtractText(String html) {
-    try {
-      final document = html_parser.parse(html);
-      return document.body?.text
-              .replaceAll(RegExp(r'\s+'), ' ')
-              .trim() ??
-          '';
-    } catch (e) {
-      debugPrint('[TopicDetail] HTML 解析失败: $e');
       return '';
     }
   }
